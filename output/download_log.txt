@@ -1,0 +1,22 @@
+2026-01-02 17:09:20,497 - INFO - Fetching verdicts from API...
+2026-01-02 17:09:28,007 - INFO - Fetched 9 verdicts
+2026-01-02 17:09:28,008 - INFO - Created 9 download URLs
+2026-01-02 17:09:28,008 - INFO - Downloading (1/9) Attempt 1: case_001_2025-10-01.pdf
+2026-01-02 17:09:30,039 - INFO - Downloaded (1/9) successfully: case_001_2025-10-01.pdf
+2026-01-02 17:09:30,040 - INFO - Downloading (2/9) Attempt 1: case_002_2025-10-01.pdf
+2026-01-02 17:09:31,495 - INFO - Downloaded (2/9) successfully: case_002_2025-10-01.pdf
+2026-01-02 17:09:31,496 - INFO - Downloading (3/9) Attempt 1: case_003_2025-10-01.pdf
+2026-01-02 17:09:32,846 - INFO - Downloaded (3/9) successfully: case_003_2025-10-01.pdf
+2026-01-02 17:09:32,847 - INFO - Downloading (4/9) Attempt 1: case_004_2025-10-01.pdf
+2026-01-02 17:09:34,045 - INFO - Downloaded (4/9) successfully: case_004_2025-10-01.pdf
+2026-01-02 17:09:34,046 - INFO - Downloading (5/9) Attempt 1: case_005_2025-10-01.pdf
+2026-01-02 17:09:34,905 - INFO - Downloaded (5/9) successfully: case_005_2025-10-01.pdf
+2026-01-02 17:09:34,905 - INFO - Downloading (6/9) Attempt 1: case_006_2025-10-01.pdf
+2026-01-02 17:09:35,907 - INFO - Downloaded (6/9) successfully: case_006_2025-10-01.pdf
+2026-01-02 17:09:35,907 - INFO - Downloading (7/9) Attempt 1: case_007_2025-10-01.pdf
+2026-01-02 17:09:36,777 - INFO - Downloaded (7/9) successfully: case_007_2025-10-01.pdf
+2026-01-02 17:09:36,778 - INFO - Downloading (8/9) Attempt 1: case_008_2025-10-01.pdf
+2026-01-02 17:09:37,615 - INFO - Downloaded (8/9) successfully: case_008_2025-10-01.pdf
+2026-01-02 17:09:37,616 - INFO - Downloading (9/9) Attempt 1: case_009_2025-10-01.pdf
+2026-01-02 17:09:38,596 - INFO - Downloaded (9/9) successfully: case_009_2025-10-01.pdf
+2026-01-02 17:09:38,598 - INFO - Saved metadata to output\metadata.json

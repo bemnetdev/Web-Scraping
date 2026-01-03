@@ -1,0 +1,74 @@
+[
+  {
+    "index": 1,
+    "date": "2025-10-01",
+    "file_type": "pdf",
+    "source_url": "https://supremedecisions.court.gov.il/Home/Download?path=NetVerdicts/2025/10/1/2025-9-66436-1-2&fileName=86ddaaa252a34b0197cf316bc1e11158&type=4",
+    "local_path": "output\\documents\\case_001_2025-10-01.pdf",
+    "server_file_hash": "86ddaaa252a34b0197cf316bc1e11158"
+  },
+  {
+    "index": 2,
+    "date": "2025-10-01",
+    "file_type": "pdf",
+    "source_url": "https://supremedecisions.court.gov.il/Home/Download?path=NetVerdicts/2025/10/1/2023-0-6905-19-2&fileName=8467c0b458f6473696fddcbc681909ad&type=4",
+    "local_path": "output\\documents\\case_002_2025-10-01.pdf",
+    "server_file_hash": "8467c0b458f6473696fddcbc681909ad"
+  },
+  {
+    "index": 3,
+    "date": "2025-10-01",
+    "file_type": "pdf",
+    "source_url": "https://supremedecisions.court.gov.il/Home/Download?path=NetVerdicts/2025/10/1/2025-9-65403-2-2&fileName=46e1d1d4e4054f6688970088639ef71d&type=4",
+    "local_path": "output\\documents\\case_003_2025-10-01.pdf",
+    "server_file_hash": "46e1d1d4e4054f6688970088639ef71d"
+  },
+  {
+    "index": 4,
+    "date": "2025-10-01",
+    "file_type": "pdf",
+    "source_url": "https://supremedecisions.court.gov.il/Home/Download?path=NetVerdicts/2025/10/1/2025-9-66312-2-2&fileName=a72cd047db9c421db0c80b0f29f26242&type=4",
+    "local_path": "output\\documents\\case_004_2025-10-01.pdf",
+    "server_file_hash": "a72cd047db9c421db0c80b0f29f26242"
+  },
+  {
+    "index": 5,
+    "date": "2025-10-01",
+    "file_type": "pdf",
+    "source_url": "https://supremedecisions.court.gov.il/Home/Download?path=NetVerdicts/2025/10/1/2025-1-27421-7-2&fileName=f6884f08d9ea4209b306320f89495bb1&type=4",
+    "local_path": "output\\documents\\case_005_2025-10-01.pdf",
+    "server_file_hash": "f6884f08d9ea4209b306320f89495bb1"
+  },
+  {
+    "index": 6,
+    "date": "2025-10-01",
+    "file_type": "pdf",
+    "source_url": "https://supremedecisions.court.gov.il/Home/Download?path=NetVerdicts/2025/10/1/2025-9-66210-2-2&fileName=9ce45e0d1c784df6b5f20486b115c739&type=4",
+    "local_path": "output\\documents\\case_006_2025-10-01.pdf",
+    "server_file_hash": "9ce45e0d1c784df6b5f20486b115c739"
+  },
+  {
+    "index": 7,
+    "date": "2025-10-01",
+    "file_type": "pdf",
+    "source_url": "https://supremedecisions.court.gov.il/Home/Download?path=NetVerdicts/2025/10/1/2024-0-3711-4-2&fileName=5e05efeee7054a61bebb2703bc87c12c&type=4",
+    "local_path": "output\\documents\\case_007_2025-10-01.pdf",
+    "server_file_hash": "5e05efeee7054a61bebb2703bc87c12c"
+  },
+  {
+    "index": 8,
+    "date": "2025-10-01",
+    "file_type": "pdf",
+    "source_url": "https://supremedecisions.court.gov.il/Home/Download?path=NetVerdicts/2025/10/1/2023-0-4258-10-2&fileName=c7bc2e61428f444a83193ca2ed3ce3dd&type=4",
+    "local_path": "output\\documents\\case_008_2025-10-01.pdf",
+    "server_file_hash": "c7bc2e61428f444a83193ca2ed3ce3dd"
+  },
+  {
+    "index": 9,
+    "date": "2025-10-01",
+    "file_type": "pdf",
+    "source_url": "https://supremedecisions.court.gov.il/Home/Download?path=NetVerdicts/2025/10/1/2025-9-32537-2-2&fileName=482ac4b0f468499883eb72bde227da8c&type=4",
+    "local_path": "output\\documents\\case_009_2025-10-01.pdf",
+    "server_file_hash": "482ac4b0f468499883eb72bde227da8c"
+  }
+]
