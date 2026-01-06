@@ -27,8 +27,8 @@ This Python script fetches verdicts from the Israeli Supreme Court website for a
 1. **Clone the repository**:
 
 ```bash
-git clone https://github.com/your-username/supreme-court-scraper.git
-cd supreme-court-scraper
+git clone https://github.com/bemnetdev/Web-Scraping.git
+cd Web Scraping
 ```
 
 2. **Create a virtual environment (recommended):**
