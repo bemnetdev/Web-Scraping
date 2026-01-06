@@ -1,174 +1,342 @@
+"""
+Supreme Court Verdict Downloader
+================================
+
+Responsibilities:
+- Query the official Supreme Court verdict search API
+- Extract verdict metadata
+- Download verdict PDF files
+- Persist metadata for traceability and auditability
+- Log all major steps for observability and debugging
+"""
+
+from __future__ import annotations
+
 import json
 import logging
 import time
 from pathlib import Path
-from typing import List, Dict
-from urllib.parse import urlparse, parse_qs
+from typing import Dict, List, Optional
+from urllib.parse import parse_qs, urlparse
+from datetime import datetime
 
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
-# ---------------- CONFIG ----------------
+# ============================================================================
+# Configuration
+# ============================================================================
+
 API_URL = "https://supremedecisions.court.gov.il/Home/SearchVerdicts"
+DOWNLOAD_BASE_URL = "https://supremedecisions.court.gov.il/Home/Download"
 
 OUTPUT_DIR = Path("output")
-DOCS_DIR = OUTPUT_DIR / "documents"
-METADATA_FILE = OUTPUT_DIR / "metadata.json"
-LOG_FILE = OUTPUT_DIR / "download_log.txt"
+DOCUMENTS_DIR = OUTPUT_DIR / "documents"
+METADATA_PATH = OUTPUT_DIR / "metadata.json"
+LOG_PATH = OUTPUT_DIR / "download_log.txt"
 
-# Create directories
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-DOCS_DIR.mkdir(parents=True, exist_ok=True)
+DOCUMENTS_DIR.mkdir(parents=True, exist_ok=True)
 
-# Logging setup
+# ============================================================================
+# Logging
+# ============================================================================
+
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
+    format="%(asctime)s | %(levelname)s | %(message)s",
     handlers=[
-        logging.FileHandler(LOG_FILE, encoding="utf-8"),
-        logging.StreamHandler()
-    ]
+        logging.FileHandler(LOG_PATH, encoding="utf-8"),
+        logging.StreamHandler(),
+    ],
 )
 
+logger = logging.getLogger(__name__)
+
+# ============================================================================
+# HTTP Configuration
+# ============================================================================
+
 HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/117.0.0.0 Safari/537.36"
-    ),
+    "User-Agent": "SupremeCourtDecisionScraper/1.0",
     "Accept": "*/*",
     "Referer": "https://supremedecisions.court.gov.il/Pages/fullsearch.aspx",
 }
 
-# Payload to fetch verdicts for a single day with importance = "מהותי בלבד"
-PAYLOAD = {
+SEARCH_PAYLOAD = {
     "document": {
         "PublishFrom": "2025-09-30T21:00:00.000Z",
         "PublishTo": "2025-09-30T21:00:00.000Z",
         "Type": [{"parent": 0, "value": 2, "text": "פסק-דין"}],
-        "Technical": 0, # "מהותי בלבד"
+        "Technical": 0,
         "dateType": 2,
-        "fromPages": None,
-        "toPages": None,
-        "CodeTypes": [2]
+        "CodeTypes": [2],
     },
     "AllSubjects": [{"Subject": None, "SubSubject": None, "SubSubSubject": None}],
     "Counsel": [],
     "Parties": [],
     "SearchText": [],
-    "lan": "1"
+    "lan": "1",
 }
 
-DOWNLOAD_BASE_URL = "https://supremedecisions.court.gov.il/Home/Download"
+# ============================================================================
+# Core Downloader
+# ============================================================================
 
-# ---------------- SCRAPER ----------------
+
 class SupremeCourtDownloader:
-    def __init__(self):
-        self.session = requests.Session()
-        retries = Retry(
-            total=5,
-            backoff_factor=1,
-            status_forcelist=[500, 502, 503, 504],
-            allowed_methods=["GET", "POST"]
-        )
-        adapter = HTTPAdapter(max_retries=retries)
-        self.session.mount("https://", adapter)
-        self.session.headers.update(HEADERS)
+    """
+    End-to-end downloader for Supreme Court verdicts.
+
+    This class encapsulates:
+    - API communication
+    - Download job creation
+    - File downloads with retries
+    - Metadata persistence
+    """
+
+    def __init__(self) -> None:
+        self.session = self._create_session()
         self.metadata: List[Dict] = []
 
-    def fetch_verdicts(self, payload: dict) -> dict:
-        """Fetch verdicts JSON from API."""
+    # ------------------------------------------------------------------ #
+    # Session Setup
+    # ------------------------------------------------------------------ #
+
+    @staticmethod
+    def _create_session() -> requests.Session:
+        """
+        Create a resilient HTTP session with retries and backoff.
+
+        Returns:
+            Configured requests.Session instance.
+        """
+        session = requests.Session()
+
+        retries = Retry(
+            total=5,
+            backoff_factor=1.0,
+            status_forcelist=(500, 502, 503, 504),
+            allowed_methods=("GET", "POST"),
+        )
+
+        adapter = HTTPAdapter(max_retries=retries)
+        session.mount("https://", adapter)
+        session.headers.update(HEADERS)
+
+        return session
+
+    # ------------------------------------------------------------------ #
+    # API Layer
+    # ------------------------------------------------------------------ #
+
+    def fetch_verdicts(self) -> List[Dict]:
+        """
+        Fetch verdict metadata from the Supreme Court search API.
+
+        Returns:
+            List of verdict dictionaries returned by the API.
+        """
+        logger.info("Requesting verdict list from Supreme Court API")
+
         try:
-            logging.info("Fetching verdicts from API...")
-            response = self.session.post(API_URL, json=payload, timeout=15)
+            response = self.session.post(
+                API_URL,
+                json=SEARCH_PAYLOAD,
+                timeout=20,
+            )
             response.raise_for_status()
-            data = response.json()
-            logging.info(f"Fetched {len(data.get('data', []))} verdicts")
-            return data
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Error fetching API data: {e}")
-        except json.JSONDecodeError:
-            logging.error(f"Failed to decode JSON. Response: {response.text[:500]}")
-        return {}
 
-    def create_filepaths(self, data: dict) -> List[str]:
-        """Create download URLs from API response."""
-        DOCUMENT_URLS = []
-        for doc in data.get("data", []):
-            path_for_web = doc.get("PathForWeb")
-            file_name = doc.get("FileName")
-            if path_for_web and file_name:
-                url = f"{DOWNLOAD_BASE_URL}?path={path_for_web}&fileName={file_name}&type=4"
-                DOCUMENT_URLS.append(url)
-        logging.info(f"Created {len(DOCUMENT_URLS)} download URLs")
-        return DOCUMENT_URLS
+            verdicts = response.json().get("data", [])
+            logger.info("Fetched %d verdict records", len(verdicts))
+            return verdicts
+
+        except Exception as exc:
+            logger.exception("Failed to fetch verdicts: %s", exc)
+            return []
+
+    # ------------------------------------------------------------------ #
+    # Download Job Construction
+    # ------------------------------------------------------------------ #
+
+    def create_download_jobs(self, cases: List[Dict]) -> List[Dict]:
+        """
+        Convert API verdict records into concrete download jobs.
+
+        Args:
+            cases: Raw verdict metadata records.
+
+        Returns:
+            List of download job dictionaries.
+        """
+        jobs: List[Dict] = []
+
+        for case in cases:
+            path = case.get("PathForWeb")
+            file_name = case.get("FileName")
+
+            if not path or not file_name:
+                continue
+
+            url = (
+                f"{DOWNLOAD_BASE_URL}"
+                f"?path={path}&fileName={file_name}&type=2"
+            )
+
+            jobs.append({"url": url, "case": case})
+
+        logger.info("Prepared %d download jobs", len(jobs))
+        return jobs
+
+    # ------------------------------------------------------------------ #
+    # Utility Helpers
+    # ------------------------------------------------------------------ #
 
     @staticmethod
-    def extract_date_from_path(path: str) -> str:
-        parts = path.split("/")
-        return f"{parts[1]}-{parts[2]}-{parts[3].zfill(2)}"
+    def parse_dotnet_date(value: Optional[str]) -> Optional[str]:
+        """
+        Convert a .NET serialized date string into ISO format.
+
+        Args:
+            value: String in '/Date(1696118400000)/' format.
+
+        Returns:
+            ISO date string (YYYY-MM-DD) or None.
+        """
+        if not value:
+            return None
+
+        try:
+            timestamp_ms = int(value.strip("/Date()"))
+            return datetime.utcfromtimestamp(timestamp_ms / 1000).strftime("%Y-%m-%d")
+        except Exception:
+            return None
 
     @staticmethod
-    def infer_extension(doc_type: str) -> str:
-        return {"4": "pdf", "3": "docx"}.get(doc_type, "bin")
+    def infer_extension(filename: str) -> str:
+        """
+        Infer file extension from filename.
 
-    def download_document(self, url: str, index: int, total: int):
-        """Download a single document with retries and log progress."""
+        Defaults to 'pdf' when missing or malformed.
+
+        Args:
+            filename: Original filename.
+
+        Returns:
+            Lowercase file extension.
+        """
+        if "." in filename:
+            return filename.rsplit(".", 1)[-1].lower()
+        return "pdf"
+
+    # ------------------------------------------------------------------ #
+    # Download Logic
+    # ------------------------------------------------------------------ #
+
+    def download_file(self, job: Dict, index: int, total: int) -> None:
+        """
+        Download a single verdict file with retry logic.
+
+        Args:
+            job: Download job dictionary.
+            index: Current file index.
+            total: Total number of files.
+        """
+        case = job["case"]
+        url = job["url"]
+
         parsed = urlparse(url)
         qs = parse_qs(parsed.query)
-        path = qs.get("path", ["unknown"])[0]
-        file_hash = qs.get("fileName", ["unknown"])[0]
-        doc_type = qs.get("type", ["4"])[0]
 
-        date = self.extract_date_from_path(path)
-        ext = self.infer_extension(doc_type)
-        filename = f"case_{index:03d}_{date}.{ext}"
-        file_path = DOCS_DIR / filename
+        original_name = case.get("DocName") or qs["fileName"][0]
+        extension = self.infer_extension(original_name)
 
-        for attempt in range(5):
+        local_filename = f"case_{index:03d}.{extension}"
+        local_path = DOCUMENTS_DIR / local_filename
+
+        for attempt in range(1, 6):
             try:
-                logging.info(f"Downloading ({index}/{total}) Attempt {attempt+1}: {filename}")
-                with self.session.get(url, stream=True, timeout=60) as r:
-                    r.raise_for_status()
-                    with open(file_path, "wb") as f:
-                        for chunk in r.iter_content(chunk_size=8192):
+                logger.info(
+                    "Downloading %d/%d (attempt %d): %s",
+                    index,
+                    total,
+                    attempt,
+                    local_filename,
+                )
+
+                with self.session.get(url, stream=True, timeout=60) as response:
+                    response.raise_for_status()
+
+                    with open(local_path, "wb") as fh:
+                        for chunk in response.iter_content(chunk_size=8192):
                             if chunk:
-                                f.write(chunk)
-                logging.info(f"Downloaded ({index}/{total}) successfully: {filename}")
-                # Save metadata
-                self.metadata.append({
-                    "index": index,
-                    "date": date,
-                    "file_type": ext,
-                    "source_url": url,
-                    "local_path": str(file_path),
-                    "server_file_hash": file_hash
-                })
+                                fh.write(chunk)
+
+                file_size = local_path.stat().st_size
+
+                self.metadata.append(
+                    {
+                        "index": index,
+                        "case_id": case.get("CaseId"),
+                        "case_number": case.get("CaseNum"),
+                        "parties": case.get("CaseName"),
+                        "case_description": case.get("CaseDesc"),
+                        "decision_type": case.get("Type"),
+                        "decision_date": self.parse_dotnet_date(case.get("VerdictDt")),
+                        "published_date": case.get("VerdictsDtString"),
+                        "year": case.get("Year"),
+                        "file_name": local_filename,
+                        "file_size_bytes": file_size,
+                        "download_url": url,
+                        "local_path": str(local_path),
+                    }
+                )
+
+                logger.info(
+                    "Downloaded successfully: %s (%d bytes)",
+                    local_filename,
+                    file_size,
+                )
                 return
-            except requests.exceptions.RequestException as e:
-                logging.warning(f"Attempt {attempt+1} failed for {filename}: {e}")
-                time.sleep(2 ** attempt)  # exponential backoff
-        logging.error(f"Failed to download ({index}/{total}) {filename} after 5 attempts")
 
-    def save_metadata(self):
-        with open(METADATA_FILE, "w", encoding="utf-8") as f:
-            json.dump(self.metadata, f, ensure_ascii=False, indent=2)
-        logging.info(f"Saved metadata to {METADATA_FILE}")
+            except Exception as exc:
+                logger.warning(
+                    "Download failed (attempt %d) for %s: %s",
+                    attempt,
+                    local_filename,
+                    exc,
+                )
+                time.sleep(2 ** attempt)
 
-    def run(self):
-        data = self.fetch_verdicts(PAYLOAD)
-        if not data:
-            logging.error("No verdict data fetched. Exiting.")
+        logger.error("Abandoning download after retries: %s", local_filename)
+
+    # ------------------------------------------------------------------ #
+    # Orchestration
+    # ------------------------------------------------------------------ #
+
+    def run(self) -> None:
+        """
+        Execute the full download pipeline.
+        """
+        cases = self.fetch_verdicts()
+        if not cases:
+            logger.error("No verdicts retrieved — exiting")
             return
 
-        DOCUMENT_URLS = self.create_filepaths(data)
-        total = len(DOCUMENT_URLS)
-        for i, url in enumerate(DOCUMENT_URLS, start=1):
-            self.download_document(url, i, total)
-        self.save_metadata()
+        jobs = self.create_download_jobs(cases)
+
+        for index, job in enumerate(jobs, start=1):
+            self.download_file(job, index, len(jobs))
+
+        with open(METADATA_PATH, "w", encoding="utf-8") as fh:
+            json.dump(self.metadata, fh, ensure_ascii=False, indent=2)
+
+        logger.info("Metadata written to %s", METADATA_PATH)
 
 
-# ---------------- ENTRYPOINT ----------------
+# ============================================================================
+# Entrypoint
+# ============================================================================
+
 if __name__ == "__main__":
-    downloader = SupremeCourtDownloader()
-    downloader.run()
+    SupremeCourtDownloader().run()
